@@ -7,11 +7,17 @@ server.get('/', function (request, response) {
   response.sendFile(__dirname + '/index.html')
 })
 
-server.post('/crawl', function (request, response) {
+server.post('/crawl', function (req, res) {
+  var crawl = require('./crawler.js')
   // make crawler instance
   // pass url from request
   // redirect to '/' with result of the crawler module
-  response.redirect('/results')
+  req.on('data', function (chunk) {
+    var url = chunk.toString().slice(4)
+    crawl.begin(url)
+  });
+
+  res.redirect('/')
 })
 
 
