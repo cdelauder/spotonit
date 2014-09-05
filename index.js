@@ -1,5 +1,6 @@
 var express = require('express')
 var server = express()
+var querystring = require('querystring')
 
 
 server.get('/', function (request, response) {
@@ -13,8 +14,9 @@ server.post('/crawl', function (req, res) {
   // pass url from request
   // redirect to '/' with result of the crawler module
   req.on('data', function (chunk) {
-    var url = chunk.toString().slice(4)
-    crawl.begin(url)
+    var body = chunk.toString()
+    var url = querystring.parse(body)
+    crawl.begin(url['crawl_url'])
   });
 
   res.redirect('/')

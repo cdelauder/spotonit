@@ -6,11 +6,22 @@
   // return the links
 
 exports.begin = function (url) {
-  function crawl (url) {
-     
-  }
 
-  return {
-    crawl(url)
-  }
+  var http = require('http')
+
+  var body = ''
+  
+  http.get(url, function (res) {
+    console.log(res.statusCode)
+    res.on('data', function (chunk) {
+      body += chunk.toString()
+      // var links = body.match(/(http.*event.*")*/)
+      console.log(body)
+    })
+  }).on('error', function (e) {
+    console.log(e)
+  })
+
+
+
 }
