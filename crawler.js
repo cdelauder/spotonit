@@ -9,16 +9,20 @@
 
 exports.begin = function (url) {
 
+  //use the core htto library in order to make GET requests to the websites we are crawling
   var http = require('http')
+  //use the core url library to parse urls
   var parser = require('url')
-
+  //regex to identify individual event links
   var eventsRegex = /<a href="(\S*?event\S*?\/\d*\S*?)"/ig
+  // regex to identify the link to the event homepages
   var eventPageRegex = /<a href="(\S*?event\S*?)"/ig
-
+  // variable to hold the links from the first request
   var body = []
+  // variable to hold the links from second request
   var links = []
+  //save the host so we have enough info to build the second request
   var host = parser.parse(url, false, true)['host']
-
 
   var req = http.get(url, function (res) {
     // call the input url
@@ -38,7 +42,6 @@ exports.begin = function (url) {
       if ( eventUrl.indexOf(host) === -1) {
         eventUrl = 'http://' + host + eventUrl
       }
-
       //make the request
       console.log('url ' + eventUrl)
       if (eventUrl) {
@@ -58,10 +61,7 @@ exports.begin = function (url) {
         })
       }
     })
-
-
   }).on('error', function (e) {
     console.log(e.message)
   })
-
 }

@@ -1,5 +1,7 @@
+//use express for routing
 var express = require('express')
 var server = express()
+//use core querystring library to extract form information
 var querystring = require('querystring')
 
 
