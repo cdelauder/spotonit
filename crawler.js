@@ -7,7 +7,7 @@
     // pull the links from the response and return any that include /(event)+.+\d+/
   // return the links
 
-exports.begin = function (url) {
+exports.begin = function (url, links, redirect) {
 
   //use the core htto library in order to make GET requests to the websites we are crawling
   var http = require('http')
@@ -20,7 +20,7 @@ exports.begin = function (url) {
   // variable to hold the links from the first request
   var body = []
   // variable to hold the links from second request
-  var links = []
+  // var links = []
   //save the host so we have enough info to build the second request
   var host = parser.parse(url, false, true)['host']
 
@@ -35,33 +35,38 @@ exports.begin = function (url) {
     })
     res.on('end', function () {
       //once we have all the data, make a second request to get the show page
-      console.log('body ' + body)
-      var eventUrl = body[0]
+      for (var i=0; i < body.length; i++) { 
       //make sure the url is properly formatted and includes the host name
-
-      if ( eventUrl.indexOf(host) === -1) {
-        eventUrl = 'http://' + host + eventUrl
-      }
-      //make the request
-      console.log('url ' + eventUrl)
-      if (eventUrl) {
-        http.get(eventUrl, function (res) {
-          res.on('data', function (chunk) {
-            //save any links that match the regex format which should indicate an event#show page
-            var match = eventsRegex.exec(chunk.toString())
-            if (match) {
-              links.push(match[1])
-            }
+        var eventUrl = body[i]
+        if ( eventUrl.indexOf(host) === -1) {
+          eventUrl = 'http://' + host + eventUrl
+        }
+        if (eventUrl) {
+          http.get(eventUrl, function (res) {
+            res.on('data', function (chunk) {
+              //save any links that match the regex format which should indicate an event#show page
+              var match = eventsRegex.exec(chunk.toString())
+              if (match) {
+                links.push(match[1])
+              }
+            })
+            res.on('end', function () {
+              console.log('1) '+links)
+              if (i > body.length && links.length >= 10) {
+                redirect()
+              } else {
+                // need a solution for non-RESTful sites
+                // querySearch()
+              }
+            })
+          }).on('error', function (e) {
+            console.log(e.message)
           })
-          res.on('end', function () {
-            console.log('links ' + links)
-          })
-        }).on('error', function (e) {
-          console.log(e.message)
-        })
+        }
       }
     })
   }).on('error', function (e) {
     console.log(e.message)
   })
+  redirect()
 }
