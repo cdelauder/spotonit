@@ -10,12 +10,10 @@ var links = []
 server.get('/', function (request, response) {
   response.set('Content-Type', 'text/html');
   response.sendFile(__dirname + '/index.html')
-  console.log('/ links ' + links)
 })
 
 server.get('/results', function (req, res) {
   response.sendFile(__dirname + '/results.html')
-  console.log('/ links ' + links)
 })
 
 server.post('/crawl', function (req, res) {
@@ -33,6 +31,7 @@ server.post('/crawl', function (req, res) {
   var redirect = function () {
     res.redirect('/')
   }
+  res.redirect('/')
 })
 
 

@@ -14,59 +14,70 @@ exports.begin = function (url, links, redirect) {
   //use the core url library to parse urls
   var parser = require('url')
   //regex to identify individual event links
-  var eventsRegex = /<a href="(\S*?event\S*?\/\d*\S*?)"/ig
+  var eventRegex = /<a href="(\S*?event\S*?[\/][\d*]\S*?)"/ig
   // regex to identify the link to the event homepages
-  var eventPageRegex = /<a href="(\S*?event\S*?)"/ig
+  var eventsRegex = /<a href="(\S*?event\S*?)"/ig
   // variable to hold the links from the first request
   var body = []
   // variable to hold the links from second request
   // var links = []
   //save the host so we have enough info to build the second request
   var host = parser.parse(url, false, true)['host']
+  // build a regex to find any links on the same host
+  var allLinksRegex = new RegExp('<a href="(http://' + host + '\\S*)"', 'ig')
+  // build a regex to find any links that include a specific object id
+  var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*)"', 'ig')
 
-  var req = http.get(url, function (res) {
-    // call the input url
-    res.on('data', function (chunk) {
-      var match = eventPageRegex.exec(chunk.toString())
-      // if we find a url that we expect to be a link to the event #show page add it to the our array
-      if (match) {
-        body.push(match[1])
-      }
-    })
-    res.on('end', function () {
-      //once we have all the data, make a second request to get the show page
-      for (var i=0; i < body.length; i++) { 
-      //make sure the url is properly formatted and includes the host name
-        var eventUrl = body[i]
-        if ( eventUrl.indexOf(host) === -1) {
-          eventUrl = 'http://' + host + eventUrl
+  var requester = function (eventRegex, eventsRegex) {
+    var req = http.get(url, function (res) {
+      // call the input url
+      res.on('data', function (chunk) {
+        var match = eventsRegex.exec(chunk.toString())
+        // if we find a url that we expect to be a link to the event #show page add it to the our array
+        if (match) {
+          body.push(match[1])
         }
-        if (eventUrl) {
-          http.get(eventUrl, function (res) {
-            res.on('data', function (chunk) {
-              //save any links that match the regex format which should indicate an event#show page
-              var match = eventsRegex.exec(chunk.toString())
-              if (match) {
-                links.push(match[1])
-              }
-            })
-            res.on('end', function () {
-              console.log('1) '+links)
-              if (i > body.length && links.length >= 10) {
-                redirect()
-              } else {
-                // need a solution for non-RESTful sites
-                // querySearch()
-              }
-            })
-          }).on('error', function (e) {
-            console.log(e.message)
-          })
+      })
+      res.on('end', function () {
+        if (body.length > 0) {
+          //once we have all the data, make a second request to get the show page
+          for (var i=0; i < body.length; i++) { 
+          //make sure the url is properly formatted and includes the host name
+            var eventUrl = body[i]
+            if ( eventUrl.indexOf(host) === -1) {
+              eventUrl = 'http://' + host + eventUrl
+            }
+            if (eventUrl) {
+              http.get(eventUrl, function (res) {
+                res.on('data', function (chunk) {
+                  //save any links that match the regex format which should indicate an event#show page
+                  var match = eventRegex.exec(chunk.toString())
+                  if (match) {
+                    links.push(match[1])
+                  }
+                })
+                res.on('end', function () {
+                  if (i >= body.length && links.length >= 10) {
+                    return links
+                  } 
+                })
+              }).on('error', function (e) {
+                console.log(e.message)
+              })
+            }
+          } 
+        } else {
+          console.log(links)
+          // need a solution for non-RESTful sites
+          requester(idRegex, allLinksRegex)
         }
-      }
+      })
+    }).on('error', function (e) {
+      console.log(e.message)
     })
-  }).on('error', function (e) {
-    console.log(e.message)
-  })
-  redirect()
+    // redirect()
+    
+  }
+
+  requester(eventRegex, eventsRegex)
 }
