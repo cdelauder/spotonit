@@ -7,7 +7,7 @@
     // pull the links from the response and return any that include /(event)+.+\d+/
   // return the links
 
-exports.begin = function (url, links, redirect) {
+exports.begin = function (url, response, callback) {
 
   //use the core htto library in order to make GET requests to the websites we are crawling
   var http = require('http')
@@ -20,13 +20,14 @@ exports.begin = function (url, links, redirect) {
   // variable to hold the links from the first request
   var body = []
   // variable to hold the links from second request
-  // var links = []
+  var links = []
   //save the host so we have enough info to build the second request
   var host = parser.parse(url, false, true)['host']
   // build a regex to find any links on the same host
   var allLinksRegex = new RegExp('<a href="(http://' + host + '\\S*)"', 'ig')
   // build a regex to find any links that include a specific object id
   var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*)"', 'ig')
+  var counter = 0
 
   var requester = function (eventRegex, eventsRegex) {
     var req = http.get(url, function (res) {
@@ -37,8 +38,13 @@ exports.begin = function (url, links, redirect) {
         if (match) {
           body.push(match[1])
         }
+        var linkMatch = eventRegex.exec(chunk.toString())
+        if (linkMatch) {
+          links.push(linkMatch[1])
+        }
       })
       res.on('end', function () {
+        var requests = 0
         if (body.length > 0) {
           //once we have all the data, make a second request to get the show page
           for (var i=0; i < body.length; i++) { 
@@ -57,8 +63,9 @@ exports.begin = function (url, links, redirect) {
                   }
                 })
                 res.on('end', function () {
-                  if (i >= body.length && links.length >= 10) {
-                    return links
+                  requests++
+                  if (requests === body.length || links.length >= 10) {
+                    makeHtml(i)
                   } 
                 })
               }).on('error', function (e) {
@@ -75,9 +82,24 @@ exports.begin = function (url, links, redirect) {
     }).on('error', function (e) {
       console.log(e.message)
     })
-    // redirect()
-    
   }
 
+  var makeHtml = function (i) {
+    counter++
+    var html = ''
+    // make a link corresponding to each link
+    for (var j=0; j < links.length; j++) {
+      var link = links[j]
+      if ( link.indexOf(host) === -1) {
+              link = 'http://' + host + link
+            }
+      html += '<a href="' + link + '">' + link + '</a><br>'
+    }
+    // send the response if we have enough links or are out of data
+    if (counter === i || links.length > 10) {
+      callback(html, response)
+    }
+  }
+  // call the function to start the crawl
   requester(eventRegex, eventsRegex)
 }
