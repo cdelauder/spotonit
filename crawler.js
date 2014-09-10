@@ -26,7 +26,7 @@ exports.begin = function (url, response, callback) {
   // build a regex to find any links on the same host
   var allLinksRegex = new RegExp('<a href="(http://' + host + '\\S*)"', 'ig')
   // build a regex to find any links that include a specific object id
-  var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*)"', 'ig')
+  var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*[id]\\S*)"', 'ig')
   var counter = 0
 
   var requester = function (eventRegex, eventsRegex) {
@@ -44,37 +44,11 @@ exports.begin = function (url, response, callback) {
         }
       })
       res.on('end', function () {
-        var requests = 0
         if (body.length > 0) {
           //once we have all the data, make a second request to get the show page
-          for (var i=0; i < body.length; i++) { 
-          //make sure the url is properly formatted and includes the host name
-            var eventUrl = body[i]
-            if ( eventUrl.indexOf(host) === -1) {
-              eventUrl = 'http://' + host + eventUrl
-            }
-            if (eventUrl) {
-              http.get(eventUrl, function (res) {
-                res.on('data', function (chunk) {
-                  //save any links that match the regex format which should indicate an event#show page
-                  var match = eventRegex.exec(chunk.toString())
-                  if (match) {
-                    links.push(match[1])
-                  }
-                })
-                res.on('end', function () {
-                  requests++
-                  if (requests === body.length || links.length >= 10) {
-                    makeHtml(i)
-                  } 
-                })
-              }).on('error', function (e) {
-                console.log(e.message)
-              })
-            }
-          } 
+          console.log(body)
+          linkGrabber()
         } else {
-          console.log(links)
           // need a solution for non-RESTful sites
           requester(idRegex, allLinksRegex)
         }
@@ -84,6 +58,43 @@ exports.begin = function (url, response, callback) {
     })
   }
 
+  var linkGrabber = function () {
+    var requests = 0
+    for (var i=0; i < body.length; i++) { 
+    //make sure the url is properly formatted and includes the host name
+      var eventUrl = body[i]
+      if ( eventUrl.indexOf(host) === -1) {
+        eventUrl = 'http://' + host + eventUrl
+      }
+      if (eventUrl) {
+        http.get(eventUrl, function (res) {
+          res.on('data', function (chunk) {
+            //save any links that match the regex format which should indicate an event#show page
+            var match = eventRegex.exec(chunk.toString())
+            if (match) {
+              links.push(match[1])
+            }
+          })
+          res.on('end', function () {
+            console.log(idRegex)
+            console.log(links)
+            requests++
+            //once the requests are in call the function to format the links in html
+            if (i === body.length || links.length >= 10) {
+              makeHtml(i)
+            } 
+          })
+        }).on('error', function (e) {
+          requests++
+          if (requests === body.length || links.length >= 10) {
+              makeHtml(i)
+          } 
+          console.log(e.message)
+        })
+      } 
+    }      
+  }
+
   var makeHtml = function (i) {
     counter++
     var html = ''
@@ -91,8 +102,8 @@ exports.begin = function (url, response, callback) {
     for (var j=0; j < links.length; j++) {
       var link = links[j]
       if ( link.indexOf(host) === -1) {
-              link = 'http://' + host + link
-            }
+        link = 'http://' + host + link
+      }
       html += '<a href="' + link + '">' + link + '</a><br>'
     }
     // send the response if we have enough links or are out of data

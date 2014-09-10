@@ -10,16 +10,12 @@ server.get('/', function (request, response) {
   response.sendFile(__dirname + '/index.html')
 })
 
-server.get('/results', function (req, res) {
-  response.sendFile(__dirname + '/results.html')
-})
 
 server.post('/crawl', function (req, res) {
   var linkHtml = ''
   var crawl = require('./crawler.js')
   // make crawler instance
-  // pass url from request
-  // redirect to '/' with result of the crawler module
+  // pass url from request, along with the callback and the response object
   req.on('data', function (chunk) {
     var body = chunk.toString()
     var url = querystring.parse(body)
@@ -27,7 +23,7 @@ server.post('/crawl', function (req, res) {
   });
   var response = res
   var buildResponse = function (linkHtml, res) {
-    // res.writeHead(200)
+    // make the response a function so it can be passed as a callback once the api calls have been made
     res.write('<html><body>' + 
       linkHtml + 
       '<a href="/">Back</a>' +
