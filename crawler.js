@@ -33,20 +33,20 @@ exports.begin = function (url, response, callback) {
     var req = http.get(url, function (res) {
       // call the input url
       res.on('data', function (chunk) {
-        var match = eventsRegex.exec(chunk.toString())
         // if we find a url that we expect to be a link to the event #show page add it to the our array
+        var match = eventsRegex.exec(chunk.toString())
         if (match) {
           body.push(match[1])
         }
+        // try to grab any event urls we come across too on the initial page
         var linkMatch = eventRegex.exec(chunk.toString())
-        if (linkMatch) {
+        if (linkMatch && links.indexOf(linkMatch[1] < 0)) {
           links.push(linkMatch[1])
         }
       })
       res.on('end', function () {
         if (body.length > 0) {
-          //once we have all the data, make a second request to get the show page
-          console.log(body)
+          //once we have all the data, make a second request to get the show page 
           linkGrabber()
         } else {
           // need a solution for non-RESTful sites
@@ -71,13 +71,11 @@ exports.begin = function (url, response, callback) {
           res.on('data', function (chunk) {
             //save any links that match the regex format which should indicate an event#show page
             var match = eventRegex.exec(chunk.toString())
-            if (match) {
+            if (match && links.indexOf(match[1] < 0)) {
               links.push(match[1])
             }
           })
           res.on('end', function () {
-            console.log(idRegex)
-            console.log(links)
             requests++
             //once the requests are in call the function to format the links in html
             if (i === body.length || links.length >= 10) {
@@ -97,8 +95,8 @@ exports.begin = function (url, response, callback) {
 
   var makeHtml = function (i) {
     counter++
-    var html = ''
     // make a link corresponding to each link
+    var html = ''
     for (var j=0; j < links.length; j++) {
       var link = links[j]
       if ( link.indexOf(host) === -1) {
