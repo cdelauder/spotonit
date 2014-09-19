@@ -73,38 +73,21 @@ exports.begin = function (url, response, callback) {
 
   var linkGrabber = function (regex) {
     for (var i=0; i < listingLinks.length; i++) { 
-    //make sure the url is properly formatted and includes the host name
       if (done) {break}
-      var eventUrl = listingLinks[i]
-      if ( eventUrl.indexOf(host) === -1) {
-        eventUrl = 'http://' + host + eventUrl
-      }
-      if (eventUrl) {
-        http.get(eventUrl, function (res) {
-          res.on('data', function (chunk) {
-            return chunk.toString()
-            //save any links that match the regex format which should indicate an event#show page
-          })
-          res.on('end', function () {
-          }).pipe(through(write, end))
-        }).on('error', function (e) {
-          console.log(e.message)
-        }).pipe(through(write, end))
-        function write (chunk) {
-          var match 
-          while ((match = regex.exec(chunk.toString())) !== null) {
-            if (match && links.indexOf(match[1]) === -1) {
-              links.push(match[1])
-            }
-          }
+    //make sure the url is properly formatted and includes the host name
+      var child_process = require('child_process')
+      var linkUrl = listingLinks[i]
+      var regexCode = 0
+      if (regex !== eventRegex) {regexCode = 1}
+      var child = child_process.fork(__dirname + '/worker.js', [linkUrl, host, regexCode])
+      child.stdout('data', function (data) {console.log('data ' + data)})
+      child.on('exit', function (newLinks) {
+        console.log('child end ' + newLinks)
+        links.concat(newLinks)
+        if (i === listingLinks.length || links.length >= 10) {
+          makeHtml(i, regex)
         }
-        function end () {
-          //once the requests are in call the function to format the links in html
-          if (i === listingLinks.length || links.length >= 10) {
-            makeHtml(i, regex)
-          } 
-        }
-      } 
+      })
     }      
   }
 
@@ -134,4 +117,6 @@ exports.begin = function (url, response, callback) {
     // need a solution for non-RESTful sites
     requester(idRegex, allLinksRegex)
   }
+
+
 }
