@@ -31,9 +31,12 @@ exports.begin = function (url, response, callback) {
   var through = require('through')
 
   var done = false
+  var time = new Date()
+  var start
 
 
   var requester = function (eventRegex, eventsRegex) {
+    start = time.getTime()
     var req = http.get(url, function (res) {
       // call the input url
       res.on('data', function (chunk) {
@@ -118,6 +121,8 @@ exports.begin = function (url, response, callback) {
       }
       html += '<a href="' + link + '">' + link + '</a><br>'
     }
+    var now = new Date()
+    html+= '<p> that took ' + (start - now) + ' ms </p>'
     // send the response if we have enough links or are out of data
     if ( links.length >= 10) {
       // but if it too short crawl again using a the links as the landing pages
