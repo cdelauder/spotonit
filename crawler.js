@@ -80,13 +80,16 @@ exports.begin = function (url, response, callback) {
       var regexCode = 0
       if (regex !== eventRegex) {regexCode = 1}
       var child = child_process.fork(__dirname + '/worker.js', [linkUrl, host, regexCode])
-      child.stdout('data', function (data) {console.log('data ' + data)})
-      child.on('exit', function (newLinks) {
-        console.log('child end ' + newLinks)
-        links.concat(newLinks)
+      child.on('message', function (data) {
+        console.log(data['content'])
+        links = links.concat(data['content'])
+        console.log('links ' + links)
         if (i === listingLinks.length || links.length >= 10) {
           makeHtml(i, regex)
         }
+      })
+      child.on('exit', function (newLinks) {
+        console.log('child end ' + newLinks)
       })
     }      
   }
