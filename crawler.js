@@ -27,9 +27,10 @@ exports.begin = function (url, response, callback) {
   var allLinksRegex = new RegExp('<a href="(http://' + host + '\\S*)"', 'ig')
   // build a regex to find any links that include a specific object id
   var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*[id]\\S*)"', 'ig')
-  var counter = 0
 
   var through = require('through')
+
+  var done = false
 
 
   var requester = function (eventRegex, eventsRegex) {
@@ -52,9 +53,8 @@ exports.begin = function (url, response, callback) {
       }
       var linkMatch 
       while ((linkmatch = eventRegex.exec(chunk.toString())) !== null) {
-        console.log(linkMatch)
-        if (linkMatch && links.indexOf(parser.parse(linkMatch[1], false, true)['pathname'] === -1)) {
-          links.push(parser.parse(linkMatch[1], false, true)['pathname'])
+        if (linkMatch && links.indexOf(linkMatch[1]) === -1) {
+          links.push(linkMatch[1])
         } 
       }
     }
@@ -70,9 +70,9 @@ exports.begin = function (url, response, callback) {
   }
 
   var linkGrabber = function (regex) {
-    var requests = 0
     for (var i=0; i < listingLinks.length; i++) { 
     //make sure the url is properly formatted and includes the host name
+      if (done) {break}
       var eventUrl = listingLinks[i]
       if ( eventUrl.indexOf(host) === -1) {
         eventUrl = 'http://' + host + eventUrl
@@ -91,14 +91,12 @@ exports.begin = function (url, response, callback) {
         function write (chunk) {
           var match 
           while ((match = regex.exec(chunk.toString())) !== null) {
-          console.log('m ' + match)
-            if (match && links.indexOf(parser.parse(match[1], false, true)['pathname'] === -1)) {
-              links.push(parser.parse(match[1], false, true)['pathname'])
+            if (match && links.indexOf(match[1]) === -1) {
+              links.push(match[1])
             }
           }
         }
         function end () {
-          requests++
           //once the requests are in call the function to format the links in html
           if (i === listingLinks.length || links.length >= 10) {
             makeHtml(i, regex)
@@ -109,7 +107,6 @@ exports.begin = function (url, response, callback) {
   }
 
   var makeHtml = function (i, regex) {
-    counter++
     // make a link corresponding to each link
     var html = ''
     for (var j=0; j < links.length; j++) {
@@ -120,14 +117,12 @@ exports.begin = function (url, response, callback) {
       html += '<a href="' + link + '">' + link + '</a><br>'
     }
     // send the response if we have enough links or are out of data
-    if (counter === i || links.length > 10) {
+    if ( links.length >= 10) {
       // but if it too short crawl again using a the links as the landing pages
-      if (links.length > 10) {
-        callback(html, response)
-      } else {
-        counter = 0
-        requester(regex, allLinksRegex)
-      }
+      callback(html, response)
+      done = true
+    } else {
+      requester(regex, allLinksRegex)
     }
   }
   // call the function to start the crawl
