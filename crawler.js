@@ -59,6 +59,7 @@ exports.begin = function (url, response, callback) {
       }
     }
     function end () {
+      console.log(listingLinks.length)
       if (listingLinks.length > 0) {
         //once we have all the data, make a second request to get the show page 
         linkGrabber(eventRegex)
