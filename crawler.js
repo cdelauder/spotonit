@@ -29,33 +29,44 @@ exports.begin = function (url, response, callback) {
   var idRegex = new RegExp('<a href="(' + '\\S*[&]\\S*[id]\\S*)"', 'ig')
   var counter = 0
 
+  var through = require('through')
+
+
   var requester = function (eventRegex, eventsRegex) {
     var req = http.get(url, function (res) {
       // call the input url
       res.on('data', function (chunk) {
+        return chunk.toString()
         // if we find a url that we expect to be a link to the event #show page add it to the our array
-        var match = eventsRegex.exec(chunk.toString())
-        if (match) {
-          listingLinks.push(match[1])
-        }
         // try to grab any event urls we come across too on the initial page
-        var linkMatch = eventRegex.exec(chunk.toString())
-        if (linkMatch && links.indexOf(linkMatch[1] === -1)) {
-          links.push(linkMatch[1])
-        }
       })
       res.on('end', function () {
-        if (listingLinks.length > 0) {
-          //once we have all the data, make a second request to get the show page 
-          linkGrabber(eventRegex)
-        } else {
-          // need a solution for non-RESTful sites
-          requester(idRegex, allLinksRegex)
-        }
-      })
+      }).pipe(through(write, end))
     }).on('error', function (e) {
       console.log(e.message)
     })
+    function write (chunk) {
+      var match = eventsRegex.exec(chunk.toString())
+      if (match) {
+        listingLinks.push(match[1])
+      }
+      var linkMatch 
+      while ((linkmatch = eventRegex.exec(chunk.toString())) !== null) {
+        console.log(linkMatch)
+        if (linkMatch && links.indexOf(parser.parse(linkMatch[1], false, true)['pathname'] === -1)) {
+          links.push(parser.parse(linkMatch[1], false, true)['pathname'])
+        } 
+      }
+    }
+    function end () {
+      if (listingLinks.length > 0) {
+        //once we have all the data, make a second request to get the show page 
+        linkGrabber(eventRegex)
+      } else {
+        // need a solution for non-RESTful sites
+        requester(idRegex, allLinksRegex)
+      }
+    }
   }
 
   var linkGrabber = function (regex) {
@@ -69,26 +80,30 @@ exports.begin = function (url, response, callback) {
       if (eventUrl) {
         http.get(eventUrl, function (res) {
           res.on('data', function (chunk) {
+            return chunk.toString()
             //save any links that match the regex format which should indicate an event#show page
-            var match = regex.exec(chunk.toString())
-            if (match && links.indexOf(match[1] === -1)) {
-              links.push(match[1])
-            }
           })
           res.on('end', function () {
-            requests++
-            //once the requests are in call the function to format the links in html
-            if (i === listingLinks.length || links.length >= 10) {
-              makeHtml(i, regex)
-            } 
-          })
+          }).pipe(through(write, end))
         }).on('error', function (e) {
-          requests++
-          if (requests === listingLinks.length || links.length >= 10) {
-              makeHtml(i, regex)
-          } 
           console.log(e.message)
-        })
+        }).pipe(through(write, end))
+        function write (chunk) {
+          var match 
+          while ((match = regex.exec(chunk.toString())) !== null) {
+          console.log('m ' + match)
+            if (match && links.indexOf(parser.parse(match[1], false, true)['pathname'] === -1)) {
+              links.push(parser.parse(match[1], false, true)['pathname'])
+            }
+          }
+        }
+        function end () {
+          requests++
+          //once the requests are in call the function to format the links in html
+          if (i === listingLinks.length || links.length >= 10) {
+            makeHtml(i, regex)
+          } 
+        }
       } 
     }      
   }
