@@ -47,9 +47,11 @@ exports.begin = function (url, response, callback) {
       console.log(e.message)
     })
     function write (chunk) {
-      var match = eventsRegex.exec(chunk.toString())
-      if (match) {
-        listingLinks.push(match[1])
+      var match 
+      while ((match = eventsRegex.exec(chunk.toString())) !== null) {
+        if (match && listingLinks.indexOf(match[1]) === -1) {
+          listingLinks.push(match[1])
+        }
       }
       var linkMatch 
       while ((linkmatch = eventRegex.exec(chunk.toString())) !== null) {
