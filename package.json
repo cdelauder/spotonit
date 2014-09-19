@@ -1,0 +1,24 @@
+{
+  "name": "spotonit",
+  "version": "0.0.0",
+  "description": "SpotOn.it Webcrawler ========",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.8.7",
+    "through": "^2.3.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cdelauder/spotonit.git"
+  },
+  "author": "Chris DeLauder",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cdelauder/spotonit/issues"
+  },
+  "homepage": "https://github.com/cdelauder/spotonit"
+}
