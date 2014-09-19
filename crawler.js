@@ -32,8 +32,11 @@ exports.begin = function (url, response, callback) {
 
   var done = false
 
+  var time = new Date()
+  var start
 
   var requester = function (eventRegex, eventsRegex) {
+    start = time.getTime()
     var req = http.get(url, function (res) {
       // call the input url
       res.on('data', function (chunk) {
@@ -81,15 +84,13 @@ exports.begin = function (url, response, callback) {
       if (regex !== eventRegex) {regexCode = 1}
       var child = child_process.fork(__dirname + '/worker.js', [linkUrl, host, regexCode])
       child.on('message', function (data) {
-        console.log(data['content'])
         links = links.concat(data['content'])
-        console.log('links ' + links)
         if (i === listingLinks.length || links.length >= 10) {
           makeHtml(i, regex)
         }
       })
-      child.on('exit', function (newLinks) {
-        console.log('child end ' + newLinks)
+      child.on('exit', function (code) {
+        console.log('child end ' + code)
       })
     }      
   }
@@ -104,6 +105,10 @@ exports.begin = function (url, response, callback) {
       }
       html += '<a href="' + link + '">' + link + '</a><br>'
     }
+    console.log(start)
+    now = new Date()
+    console.log(now.getTime())
+    html += '<p> that took ' + (now.getTime() - start) + ' ms</p>'
     // send the response if we have enough links or are out of data
     if ( links.length >= 10) {
       // but if it too short crawl again using a the links as the landing pages

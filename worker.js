@@ -42,11 +42,10 @@ var linkModule = (function (args) {
         'content': links
       }
       try{
-                process.send(data);
-            }
-            catch(err){
-                console.log("retriever.js: problem with process.send() " + err.message + ", " + err.stack);
-            }
+        process.send(data);
+      }
+      catch(err){
+        console.log("retriever.js: problem with process.send() " + err.message + ", " + err.stack);        }
       return links
       //once the requests are in call the function to format the links in html
     }
